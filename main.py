@@ -89,7 +89,7 @@ def run(playwright: Playwright, room: str, max_delay: float = 3, username: str =
         page.locator("text=OK").click()
 
     DICTIONARY = join_game(page)
-
+    USED_WORDS = []
     while True:
         print("🍡 Waiting for the input to be visible...")
         # if page.frame_locator("iframe").locator("text=won the last round!").is_visible():
@@ -104,11 +104,12 @@ def run(playwright: Playwright, room: str, max_delay: float = 3, username: str =
         print(f"🧃 The syllable is {syllable}")
         page.frame_locator("iframe").locator("input[type=\"text\"]").click()
         for element in DICTIONARY:
-            if syllable in element:
+            if syllable in element and element not in USED_WORDS:
                 try:
                     print(f"Found {element} which has {syllable}")
                     page.frame_locator("iframe").locator("input[type=\"text\"]").type(element, delay=100)
                     print("Pressing [Enter]")
+                    USED_WORDS.append(element)
                     page.frame_locator("iframe").locator("input[type=\"text\"]").press("Enter")
                     time.sleep(check_delay)
                     if not page.frame_locator("iframe").locator("input[type=\"text\"]").is_visible():
