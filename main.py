@@ -1,6 +1,7 @@
 import argparse
 import random
 import time
+
 from playwright.sync_api import Playwright, sync_playwright
 
 from data.french import DICTIONARY
