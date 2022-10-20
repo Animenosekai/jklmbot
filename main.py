@@ -1,10 +1,53 @@
 import argparse
 import random
+import sys
 import time
 
-from playwright.sync_api import Playwright, sync_playwright
+from playwright.sync_api import Playwright, sync_playwright, Page
 
-from data.french import DICTIONARY
+from data.english import DICTIONARY as ENGLISH_DICTIONARY
+from data.french import DICTIONARY as FRENCH_DICTIONARY
+from data.german import DICTIONARY as GERMAN_DICTIONARY
+from data.italian import DICTIONARY as ITALIAN_DICTIONARY
+from data.nahuatl import DICTIONARY as NAHUATL_DICTIONARY
+from data.spanish import DICTIONARY as SPANISH_DICTIONARY
+
+
+def join_game(page: Page):
+    # Click text=Join game
+    print("Joining game")
+    page.frame_locator("iframe").locator("text=Join game").click()
+
+    time.sleep(1)
+    print("Searching for the right dictionary...")
+    language = str(page.frame_locator("iframe").locator(".dictionary").text_content()).lower().replace(" ", "")
+    # print(f"Debug: `.dictionary` seems to be {language}")
+    if language == "french":
+        print("🧃 Found the French dictionary")
+        DICTIONARY = FRENCH_DICTIONARY
+    elif language == "german":
+        print("🧃 Found the German dictionary")
+        DICTIONARY = GERMAN_DICTIONARY
+    elif language == "spanish":
+        print("🧃 Found the Spanish dictionary")
+        DICTIONARY = SPANISH_DICTIONARY
+    elif language == "italian":
+        print("🧃 Found the Italian dictionary")
+        DICTIONARY = ITALIAN_DICTIONARY
+    elif language == "nahuatl":
+        print("🧃 Found the Nahuatl dictionary")
+        DICTIONARY = NAHUATL_DICTIONARY
+    elif language == "breton":
+        print("😥 We do not support Breton yet")
+        sys.exit(1)
+    elif language.startswith("brazilian"):
+        print("😥 We do not support Braizilian Portuguese yet")
+        sys.exit(1)
+    else:
+        print("🧃 Found the English dictionary")
+        DICTIONARY = ENGLISH_DICTIONARY
+
+    return DICTIONARY
 
 
 def run(playwright: Playwright, room: str, max_delay: float = 3, username: str = None, check_delay: float = 1) -> None:
@@ -45,19 +88,19 @@ def run(playwright: Playwright, room: str, max_delay: float = 3, username: str =
     else:
         page.locator("text=OK").click()
 
-    # Click text=Join game
-    print("Joining game")
-    page.frame_locator("iframe").locator("text=Join game").click()
+    DICTIONARY = join_game(page)
 
     while True:
         print("🍡 Waiting for the input to be visible...")
+        # if page.frame_locator("iframe").locator("text=won the last round!").is_visible():
+        #     DICTIONARY = join_game(page)
         page.frame_locator("iframe").locator("input[type=\"text\"]").wait_for(state="visible", timeout=0)
         print("✅ Input visible")
         print("Waiting a bit to to not be caught")
         time.sleep(random.random() * max_delay)
         # Click .syllable
         print("Getting the syllable...")
-        syllable = page.frame_locator("iframe").locator(".syllable").text_content().lower()
+        syllable = str(page.frame_locator("iframe").locator(".syllable").text_content()).lower()
         print(f"🧃 The syllable is {syllable}")
         page.frame_locator("iframe").locator("input[type=\"text\"]").click()
         for element in DICTIONARY:
@@ -79,7 +122,7 @@ def run(playwright: Playwright, room: str, max_delay: float = 3, username: str =
 
 def main():
     parser = argparse.ArgumentParser(
-        prog='translatepy', description='Translate, transliterate, get the language of texts in no time with the help of multiple APIs!')
+        prog='jklmbot', description='Win all of your JKLM.fun games!')
 
     # parser.add_argument('--version', '-v', action='version', version=translatepy.__version__)
     parser.add_argument("--room", "-r", action="store", type=str, help="The room to enter.", required=True)
