@@ -1,6 +1,9 @@
 import argparse
 import random
 import time
+import base64
+import pathlib
+import typing
 
 from playwright.sync_api import Page, Playwright, sync_playwright
 
@@ -10,6 +13,34 @@ from data.german import DICTIONARY as GERMAN_DICTIONARY
 from data.italian import DICTIONARY as ITALIAN_DICTIONARY
 from data.nahuatl import DICTIONARY as NAHUATL_DICTIONARY
 from data.spanish import DICTIONARY as SPANISH_DICTIONARY
+
+
+def generate_user_id() -> str:
+    """
+    Returns
+    -------
+    str
+    """
+    return "".join(random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-") for _ in range(16))
+
+
+def is_jpeg(data: bytes) -> bool:
+    """
+    Determine if the given object is a JPEG file
+
+    Parameters
+    ----------
+    data: bytes
+
+    Returns
+    -------
+    bool
+    """
+    buf = data[:max(8192, len(data))]
+    return (len(buf) > 2 and
+            buf[0] == 0xFF and
+            buf[1] == 0xD8 and
+            buf[2] == 0xFF)
 
 
 def get_browser_from_name(name: str):
@@ -26,6 +57,7 @@ def get_browser_from_name(name: str):
     else:
         return "chromium"
 
+
 def get_syllable(page: Page):
     """
     Parameters
@@ -36,6 +68,7 @@ def get_syllable(page: Page):
     syllable = str(page.frame_locator("iframe").locator(".syllable").text_content()).lower()
     print(f"🧃 The syllable is '{syllable}'")
     return syllable
+
 
 def get_dictionary(page: Page):
     """
@@ -61,7 +94,7 @@ def get_dictionary(page: Page):
     elif language == "nahuatl":
         print("🧃 Found the Nahuatl dictionary")
         DICTIONARY = NAHUATL_DICTIONARY
-    
+
     elif language == "breton":
         print("😥 We do not support Breton yet (using the English dictionary)")
         DICTIONARY = ENGLISH_DICTIONARY
@@ -71,6 +104,7 @@ def get_dictionary(page: Page):
     elif "pokemon" in language:
         print("😥 We do not support Pokemon languages yet (using the English dictionary)")
         DICTIONARY = ENGLISH_DICTIONARY
+
     else:
         print("🧃 Found the English dictionary")
         DICTIONARY = ENGLISH_DICTIONARY
@@ -96,13 +130,13 @@ def join_game(page: Page):
             JOINED = page.frame_locator("iframe").locator(".selfTurn").is_visible()
 
 
-def run(playwright: Playwright, room: str, max_delay: float = 3, username: str = None, check_delay: float = 1, keypress_delay: float = 100, headless: bool = False, browser: str = "chromium") -> None:
+def run(playwright: Playwright, room: str, max_delay: float = 3, username: str = None, picture: pathlib.Path = None, check_delay: float = 1, keypress_delay: float = 100, headless: bool = False, browser: str = "chromium") -> None:
     """
     Runs the bot to play jklm
-    
+
     Parameters
     ----------
-    playwright: playwright.sync_api.Playwright | Playwright
+    playwright: Playwright | playwright.sync_api.Playwright
         The Playwright context to run the bot from
     room: str
         The room code to enter
@@ -118,11 +152,24 @@ def run(playwright: Playwright, room: str, max_delay: float = 3, username: str =
         If the browser should be ran in headless mode or not.
     browser: str, default = "chromium"
         The browser to use.
-    
+
     Returns
     -------
     None
     """
+    if picture is not None:
+        if not isinstance(picture, bytes):
+            with open(picture, "r+b") as f:
+                picture = f.read()
+
+        if not is_jpeg(picture):
+            raise TypeError("❌ The given picture does not seem to be a JPEG image")
+
+        picture = base64.b64encode(picture).decode("utf-8")
+        picture_length = len(picture)
+        if picture_length > 10000:
+            raise TypeError(f"❌ The given picture is too big ({picture_length}/10000)")
+
     browser = get_browser_from_name(browser)
     if browser == "firefox":
         browser = playwright.firefox.launch(headless=headless)
@@ -131,26 +178,40 @@ def run(playwright: Playwright, room: str, max_delay: float = 3, username: str =
     else:
         browser = playwright.chromium.launch(headless=headless)
 
-
     context = browser.new_context()
     # Open new page
     page = context.new_page()
+    if picture:
+        if not username:
+            username = f"Guest{''.join(random.choice('0123456789') for _ in range(4))}"
+        page.add_init_script(script=f"""
+        window.localStorage.setItem("jklmSettings", '{{"version":2,"volume":0.5,"muted":false,"chatFilter":[],"nickname":"{username}", "picture": "{picture}"}}')
+        """)
+
     # Go to https://jklm.fun/{room}
     print(f"Going to https://jklm.fun/{room}")
     page.goto(f"https://jklm.fun/{room}")
     # Click text=OK
     print("Entering username")
-    if username is not None:
-        # Click [placeholder="Your name"]
-        page.locator("[placeholder=\"Your name\"]").click()
-        # Press a with modifiers
-        page.locator("[placeholder=\"Your name\"]").press("Meta+a")
-        # Fill [placeholder="Your name"]
-        page.locator("[placeholder=\"Your name\"]").type(username)
-        # Press Enter
-        page.locator("[placeholder=\"Your name\"]").press("Enter")
-    else:
-        page.locator("text=OK").click()
+    JOINABLE = False
+
+    while not JOINABLE:
+        try:
+            if username is not None:
+                # Click [placeholder="Your name"]
+                page.locator("[placeholder=\"Your name\"]").click(timeout=1000)
+                # Press a with modifiers
+                page.locator("[placeholder=\"Your name\"]").press("Meta+a")
+                # Fill [placeholder="Your name"]
+                page.locator("[placeholder=\"Your name\"]").type(username)
+                # Press Enter
+                page.locator("[placeholder=\"Your name\"]").press("Enter")
+            else:
+                page.locator("text=OK").click(timeout=1000)
+        except Exception:
+            # from rich.console import Console
+            # Console().print_exception()
+            JOINABLE = page.frame_locator("iframe").locator(".joinRound").is_visible() or page.frame_locator("iframe").locator(".selfTurn").is_visible()
 
     join_game(page)
     USED_WORDS = []
@@ -200,7 +261,9 @@ def main():
     # parser.add_argument('--version', '-v', action='version', version=translatepy.__version__)
     parser.add_argument("--room", "-r", action="store", type=str, help="The room to enter.", required=True)
     parser.add_argument("--username", "-u", action="store", type=str, help="The username to use.", required=False, default=None)
-    parser.add_argument("--browser", "-b", action="store", type=str, help="The browser to use (chromium|firefox|webkit).", required=False, default="chromium")
+    parser.add_argument("--picture", "-p", action="store", type=str, help="The profile picture to use.", required=False, default=None)
+    parser.add_argument("--browser", "-b", action="store", type=str,
+                        help="The browser to use (chromium|firefox|webkit).", required=False, default="chromium")
     parser.add_argument("--headless", action="store_true",
                         help="Wether to run the browser without a graphical interface.")
     parser.add_argument("--delay", "--max-delay", "-d", action="store", type=float,
@@ -213,7 +276,15 @@ def main():
     args = parser.parse_args()
 
     with sync_playwright() as playwright:
-        run(playwright, room=args.room, max_delay=args.delay, username=args.username, check_delay=args.check, keypress_delay=args.key, headless=args.headless, browser=args.browser)
+        try:
+            run(playwright, room=args.room, max_delay=args.delay, username=args.username, picture=args.picture,
+                check_delay=args.check, keypress_delay=args.key, headless=args.headless, browser=args.browser)
+        except Exception as err:
+            # from rich.console import Console
+            # Console().print_exception()
+            print("")
+            print(" ".join(err.args))
+            print("")
 
 
 if __name__ == "__main__":
