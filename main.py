@@ -1,8 +1,8 @@
 import argparse
-import random
-import time
 import base64
 import pathlib
+import random
+import time
 import typing
 
 from playwright.sync_api import Page, Playwright, sync_playwright
@@ -199,15 +199,15 @@ def run(playwright: Playwright, room: str, max_delay: float = 3, username: str =
         try:
             if username is not None:
                 # Click [placeholder="Your name"]
-                page.locator("[placeholder=\"Your name\"]").click(timeout=1000)
+                page.locator(".nickname").click(timeout=1000)
                 # Press a with modifiers
-                page.locator("[placeholder=\"Your name\"]").press("Meta+a")
+                page.locator(".nickname").press("Meta+a")
                 # Fill [placeholder="Your name"]
-                page.locator("[placeholder=\"Your name\"]").type(username)
+                page.locator(".nickname").type(username)
                 # Press Enter
-                page.locator("[placeholder=\"Your name\"]").press("Enter")
+                page.locator(".nickname").press("Enter")
             else:
-                page.locator("text=OK").click(timeout=1000)
+                page.locator("button.styled").click(timeout=1000)
         except Exception:
             # from rich.console import Console
             # Console().print_exception()
