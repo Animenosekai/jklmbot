@@ -199,18 +199,18 @@ def run(playwright: Playwright, room: str, max_delay: float = 3, username: str =
         try:
             if username is not None:
                 # Click [placeholder="Your name"]
-                page.locator(".nickname").click(timeout=1000)
+                page.locator("input.nickname").click(timeout=1000)
                 # Press a with modifiers
-                page.locator(".nickname").press("Meta+a")
+                page.locator("input.nickname").press("Meta+a")
                 # Fill [placeholder="Your name"]
-                page.locator(".nickname").type(username)
+                page.locator("input.nickname").type(username)
                 # Press Enter
-                page.locator(".nickname").press("Enter")
+                page.locator("input.nickname").press("Enter")
             else:
                 page.locator("button.styled").click(timeout=1000)
         except Exception:
-            # from rich.console import Console
-            # Console().print_exception()
+            from rich.console import Console
+            Console().print_exception()
             JOINABLE = page.frame_locator("iframe").locator(".joinRound").is_visible() or page.frame_locator("iframe").locator(".selfTurn").is_visible()
 
     join_game(page)
