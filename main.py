@@ -209,8 +209,8 @@ def run(playwright: Playwright, room: str, max_delay: float = 3, username: str =
             else:
                 page.locator("button.styled").click(timeout=1000)
         except Exception:
-            from rich.console import Console
-            Console().print_exception()
+            # from rich.console import Console
+            # Console().print_exception()
             JOINABLE = page.frame_locator("iframe").locator(".joinRound").is_visible() or page.frame_locator("iframe").locator(".selfTurn").is_visible()
 
     join_game(page)
