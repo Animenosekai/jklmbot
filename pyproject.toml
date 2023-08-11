@@ -23,6 +23,12 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
+
+    # Topics
+    "Topic :: Games/Entertainment",
+
+    # Code quality
+    "Typing :: Typed",
 ]
 
 [tool.poetry.dependencies]

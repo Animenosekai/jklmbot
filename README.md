@@ -34,6 +34,11 @@
 > **Warning**  
 > The code for this script hasn't been updated for a long time and might not work as well as back when the code was written! Please [contribute](#contributing) and fix stuff if you spot any bug 🙇.
 
+It could be used to train, or have a bit of fun.
+
+> **Warning**  
+> This is made public for entertainment and education purposes and should not be used to ruin any party online. It was meant to be used with private games and should stay in private games. You are the only one responsible for any misuse of this script.
+
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine.
@@ -109,6 +114,7 @@ Pull requests are welcome. For major changes, please open a discussion first to 
 ## Built With
 
 - [playwright](https://github.com/microsoft/playwright) - to control a web browser
+- The different dictionaries under [*jklmbot/data*](./jklmbot/data/) are coming from different sources
 
 ## Authors
 
