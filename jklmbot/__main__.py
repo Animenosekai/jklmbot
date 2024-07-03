@@ -67,7 +67,7 @@ def get_syllable(page: Page):
     page: Page
     """
     print("Getting the syllable...")
-    syllable = str(page.frame_locator("iframe").locator(".syllable").text_content()).lower()
+    syllable = str(page.frame_locator("iframe >> nth=0").locator(".syllable").text_content()).lower()
     print(f"🧃 The syllable is '{syllable}'")
     return syllable
 
@@ -79,7 +79,7 @@ def get_dictionary(page: Page):
     page: Page
     """
     print("🌐 Searching for the right dictionary...")
-    language = str(page.frame_locator("iframe").locator(".dictionary").text_content()).lower().replace(" ", "")
+    language = str(page.frame_locator("iframe >> nth=0").locator(".dictionary").text_content()).lower().replace(" ", "")
     # print(f"Debug: `.dictionary` seems to be {language}")
     if language == "french":
         print("🧃 Found the French dictionary")
@@ -126,10 +126,10 @@ def join_game(page: Page):
     JOINED = False
     while not JOINED:
         try:
-            page.frame_locator("iframe").locator(".joinRound").click(timeout=1000)
+            page.frame_locator("iframe >> nth=0").get_by_role("button", name="Join game").click(timeout=1000)
             JOINED = True
         except Exception:
-            JOINED = page.frame_locator("iframe").locator(".selfTurn").is_visible()
+            JOINED = page.frame_locator("iframe >> nth=0").get_by_role("textbox").is_visible()
 
 
 def run(playwright: Playwright, room: str, max_delay: float = 3, username: str = None, picture: pathlib.Path = None, check_delay: float = 1, keypress_delay: float = 100, headless: bool = False, browser: str = "chromium") -> None:
@@ -200,21 +200,15 @@ def run(playwright: Playwright, room: str, max_delay: float = 3, username: str =
     while not JOINABLE:
         try:
             if username is not None:
-                # Click [placeholder="Your name"]
-                page.locator("input.nickname").click(timeout=1000)
-                # Press a with modifiers
-                page.locator("input.nickname").press("Meta+a")
-                # Fill [placeholder="Your name"]
-                page.locator("input.nickname").type(username)
-                # Press Enter
-                page.locator("input.nickname").press("Enter")
+                page.get_by_placeholder("Your name").click()
+                page.get_by_placeholder("Your name").fill(username)
+                page.get_by_role("button", name="OK").click()
             else:
                 page.locator("button.styled").click(timeout=1000)
         except Exception:
-            # from rich.console import Console
-            # Console().print_exception()
-            JOINABLE = page.frame_locator("iframe").locator(".joinRound").is_visible(
-            ) or page.frame_locator("iframe").locator(".selfTurn").is_visible()
+            from rich.console import Console
+            Console().print_exception()
+            JOINABLE = page.frame_locator("iframe >> nth=0").get_by_role("button", name="Join game").is_visible() or page.frame_locator("iframe >> nth=0").get_by_role("textbox").is_visible()
 
     join_game(page)
     USED_WORDS = []
@@ -224,10 +218,10 @@ def run(playwright: Playwright, room: str, max_delay: float = 3, username: str =
         VISIBLE = False
         while not VISIBLE:
             try:
-                page.frame_locator("iframe").locator(".selfTurn").wait_for(state="visible", timeout=1000)
+                page.frame_locator("iframe >> nth=0").get_by_role("textbox").wait_for(state="visible", timeout=1000)
                 VISIBLE = True
             except Exception:
-                if page.frame_locator("iframe").locator(".joinRound").is_visible():
+                if page.frame_locator("iframe >> nth=0").get_by_role("button", name="Join game").is_visible():
                     join_game(page)
 
         print("✅ Input visible")
@@ -235,17 +229,17 @@ def run(playwright: Playwright, room: str, max_delay: float = 3, username: str =
         time.sleep(random.random() * max_delay)
         # Click .syllable
         syllable = get_syllable(page)
-        page.frame_locator("iframe").locator(".selfTurn").click()
+        page.frame_locator("iframe >> nth=0").get_by_role("textbox").click()
         for element in get_dictionary(page):
             if syllable in element and element not in USED_WORDS:
                 try:
                     print(f"Found '{element}' which has '{syllable}'")
-                    page.frame_locator("iframe").locator(".selfTurn").type(element, delay=keypress_delay)
+                    page.frame_locator("iframe >> nth=0").get_by_role("textbox").type(element, delay=keypress_delay)
                     print("Pressing [Enter]")
                     USED_WORDS.append(element)
-                    page.frame_locator("iframe").locator(".selfTurn").press("Enter")
+                    page.frame_locator("iframe >> nth=0").get_by_role("textbox").press("Enter")
                     time.sleep(check_delay)
-                    if not page.frame_locator("iframe").locator(".selfTurn").is_visible():
+                    if not page.frame_locator("iframe >> nth=0").get_by_role("textbox").is_visible():
                         break
                     syllable = get_syllable(page)
                 except Exception:

@@ -31,12 +31,15 @@
 
 `jklmbot` is a simple script to let your computer play "BombParty" on the website [*jklm.fun*](https://jklm.fun)
 
-> **Warning**  
+> [!WARNING]  
 > The code for this script hasn't been updated for a long time and might not work as well as back when the code was written! Please [contribute](#contributing) and fix stuff if you spot any bug 🙇.
 
 It could be used to train, or have a bit of fun.
 
-> **Warning**  
+> [!NOTE]  
+> The script doesn't check for the other players' answers, so it's not a guarantee to win every game.
+
+> [!WARNING]  
 > This is made public for entertainment and education purposes and should not be used to ruin any party online. It was meant to be used with private games and should stay in private games. You are the only one responsible for any misuse of this script.
 
 ## Getting Started
